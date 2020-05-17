@@ -7,3 +7,5 @@ dist/
 build/
 venv*
 .vscode
+rightmove_webscraper/static/email_credentials.py
+rightmove_webscraper/static/receivers.py

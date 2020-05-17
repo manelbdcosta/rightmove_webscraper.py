@@ -1,3 +1,4 @@
+import os
 import re
 import datetime as dt
 from lxml import html
@@ -5,6 +6,9 @@ import numpy as np
 import pandas as pd
 import requests
 
+from rightmove_webscraper.send_email import send_email
+
+PATH_TO_CSV_RESULTS = os.path.join(os.getcwd(), 'csv_results')
 
 class RightmoveData:
     """The `RightmoveData` webscraper collects structured data on properties
@@ -33,7 +37,8 @@ class RightmoveData:
         self._url = url
         self._validate_url()
         self._results = self._get_results(get_floorplans=get_floorplans, get_date_available=get_date_available)
-
+        path_to_csv, filename = self.write_to_csv(self._results)
+        send_email(path_to_csv, filename)
     @staticmethod
     def _request(url: str):
         r = requests.get(url)
@@ -283,4 +288,33 @@ class RightmoveData:
         now = dt.datetime.today()
         results["search_date"] = now
 
+        # If get_date_available, convert date str to date format
+        if get_date_available:
+            results = convert_to_date_format(results)
+
+            #Order dataframe by descending order of data availability
+            results = results.sort_values('date_available_list', ascending=False)
+
         return results
+    
+    def write_to_csv(self, results):
+        """
+        Writes results dataframe to a .csv file.
+        """
+        date = str(dt.datetime.now().date())
+        filename = 'results_' + date + '.csv'
+        file_path = os.path.join(PATH_TO_CSV_RESULTS, filename)
+        results.to_csv(file_path, index=False)
+        return file_path, filename
+
+
+def convert_to_date_format(results):
+    date_list = []
+    for row in results['date_available_list']:
+        if row is not np.nan:
+            date_list += [dt.datetime.strptime(str(row), '%d/%m/%Y').date()]
+        else:
+            date_list += [dt.datetime(1111, 1, 1).date()]
+    results['date_available_list'] = date_list
+    results = results.sort_values('date_available_list', ascending=False)
+    return results
