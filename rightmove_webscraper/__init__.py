@@ -1,5 +1,7 @@
 import os
 import re
+import time
+import random
 import datetime as dt
 from lxml import html
 import numpy as np
@@ -196,6 +198,7 @@ class RightmoveData:
         date_available_list = list() if get_date_available else np.nan
         if get_floorplans or get_date_available:
             for weblink in weblinks:
+                time.sleep(random.randint(1, 7))
                 status_code, content = self._request(weblink)
                 if status_code != 200:
                     continue
